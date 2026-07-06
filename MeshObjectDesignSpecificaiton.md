@@ -6,7 +6,7 @@ Design Specification for [Mesh Object]
 
 重庆诺源工业软件科技有限公司  
 2026年07月06日  
-版本：V1.7
+版本：V1.8
 
 ## Revision History
 
@@ -20,6 +20,7 @@ Design Specification for [Mesh Object]
 | V1.5 | 2026-07-06 | 补充 User Case §5.2 创建 |
 | V1.6 | 2026-07-06 | 重构 `femmgMeshObjectIdManager`：`GetMeshObjectId` / `Allocate` 分离 |
 | V1.7 | 2026-07-06 | 简化 `Create` 接口：调用方传入 name / pComps，MOId 在 `Create` 内部获取 |
+| V1.8 | 2026-07-06 | §5.2 修正 element 计数时机；精简 EHEAP 持久化描述 |
 
 ## 1. Introduction
 
@@ -661,7 +662,7 @@ Preview 不创建 MeshObject。
 | `femmgMeshObjectIdManager` | `GetMeshObjectId()` 提供当前 MOId；`Create()` 成功后内部 `Allocate()` |
 | `femmgMeshObjectManager` | `Create(name, pComps, nCmp)`：内部获取 MOId、组装 record、持久化 |
 | `femdaMOFSIProxy` | `AddMeshObject()` 写入 `MOHEAP` / `MOTREE` |
-| Element 创建路径 | 在 `ElmAdd` 前填写 `element.iMeshObjectId` |
+| Element 创建路径 | `ElmAdd` 前填写 `iMeshObjectId`；`ElmAdd` 成功后更新 `m_MOIdToElementCountMap` |
 | MeshObject Entity | 接收创建结果，供 Navigator 查询 |
 | Navigator / UI | 刷新，显示新 Mesh 节点 |
 
@@ -690,8 +691,6 @@ Keep 成功：
       - 内部调用 Allocate()
     ↓
 Navigator 刷新，显示新 Mesh 节点
-    ↓
-用户 Save 时，element.iMeshObjectId 随 EHEAP 持久化
 ```
 
 ##### 路径 B：手工建网（阶段二）
@@ -701,6 +700,7 @@ Navigator 刷新，显示新 Mesh 节点
     ↓
 创建 node / element 过程中：
     - ElmAdd 前：element.iMeshObjectId = GetMeshObjectId()
+    - ElmAdd 成功后更新 m_MOIdToElementCountMap
     ↓
 本次手工建网操作完成时：
     femmgMeshObjectManager.Create(name, nullptr, 0)
@@ -708,23 +708,20 @@ Navigator 刷新，显示新 Mesh 节点
       - pComps 为空，表示手工来源
       - 内部调用 Allocate()
     ↓
-更新 m_MOIdToElementCountMap
-    ↓
 Navigator 刷新，显示新 Mesh 节点
 ```
 
 #### 5.2.5 数据写入
 
-创建完成后，数据分布在三处：
+创建完成后，运行时数据分布如下：
 
 | 写入位置 | 内容 | 写入时机 |
 |---|---|---|
-| `m_MOIdToRecordMap` | `MeshObjectRecord` 运行时副本 | `Create()` 时立即写入 |
-| `MOHEAP` / `MOTREE` | `MeshObjectRecord` 持久化 record | `femdaMOFSIProxy::AddMeshObject()` 时写入 |
-| `EHEAP`（element） | `element.iMeshObjectId` | 每个 element `ElmAdd` 时写入；Save 时落盘 |
-| `m_MOIdToElementCountMap` | MOId → element 数量 | 每个 element `ElmAdd` / 扫描时累加 |
+| `m_MOIdToRecordMap` | `MeshObjectRecord` 运行时副本 | `Create()` 时 |
+| `MOHEAP` / `MOTREE` | `MeshObjectRecord` 持久化 record | `Create()` 内 `AddMeshObject()` 时 |
+| `m_MOIdToElementCountMap` | MOId → element 数量 | 每个 element `ElmAdd` 成功时累加 |
 
-成员关系以 `element.iMeshObjectId` 为唯一真相；`m_MOIdToElementCountMap` 是运行时缓存。
+`m_MOIdToElementCountMap` 在 element 创建阶段即开始累加，`Create()` 执行时计数已就绪；成员关系以 `element.iMeshObjectId` 为唯一真相，计数缓存不一致时可 rescan 修复。
 
 #### 5.2.6 创建规则
 
@@ -733,7 +730,7 @@ Navigator 刷新，显示新 Mesh 节点
 | MOId 分配 | `GetMeshObjectId()` 获取当前 MOId；`Create()` 成功后 `Allocate()` 推进；`0` 保留为未归属 |
 | 一次操作一个 MO | 一次 Keep 或一次手工建网完成对应一个 MeshObject |
 | 显式创建 | `femmgMeshObjectManager::Create()` 是创建入口，末尾调用 `Allocate()`；不在 `ElmAdd` 内自动创建 |
-| `ElmAdd` 职责 | 调用方在 `ElmAdd` 前通过 `GetMeshObjectId()` 填写 `iMeshObjectId` |
+| `ElmAdd` 挂钩 | `ElmAdd` 前填写 `iMeshObjectId`；成功后 `OnElementAdded(moId)` 累加 `m_MOIdToElementCountMap` |
 | 几何 vs 手工 | `pComps` 非空表示几何 Keep；`pComps` 为空表示手工创建 |
 | Preview | Preview 不分配 MOId，不创建 MeshObject |
 | Keep 失败 | 不调用 `Create()` 与 `Allocate()`；`m_iMeshObjectId` 保持不变 |
@@ -750,9 +747,7 @@ Navigator 刷新，显示新 Mesh 节点
 
 #### 5.2.8 与 Save 的关系
 
-- `femdaMOFSIProxy::AddMeshObject()` 在 `Create()` 时即将 `MeshObjectRecord` 写入 `MOHEAP` / `MOTREE`。
-- `element.iMeshObjectId` 在 `ElmAdd` 时写入内存，随 FEM Save 持久化到 EHEAP。
-- 因此创建后即使尚未 Save，运行时状态已完整；Save 保证 mf1 重开可恢复（见 §5.1）。
+`femdaMOFSIProxy::AddMeshObject()` 在 `Create()` 时即将 `MeshObjectRecord` 写入 `MOHEAP` / `MOTREE`。创建后即使尚未 Save，运行时状态（record map、element 归属、计数缓存）已完整；Save/Open 细节见 §4.5.5、§5.1。
 
 ### 5.3 删除
 
