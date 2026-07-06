@@ -1,0 +1,141 @@
+<html>
+<head>
+
+<!-- PARSE_DATE=010319 -->
+
+<script language="JavaScript" src="../scripts/MetaTags.js"></script>
+
+<script language="JavaScript" src="../scripts/MouseOver.js"></script>
+
+<script language="JavaScript" src="../scripts/IconLocator.js"></script>
+
+<title>Mesh Details</title>
+</head>
+<body bgcolor="#ffffff">
+
+<a name="363F9494doji"> </a>
+
+<script language="JavaScript" src="../scripts/NavBar_ideas_fem_cr.js"></script>
+
+<!-- If you have site specific information, uncomment the line below -->
+<!-- and complete the instructions in the Site Specific area at the bottom.  -->
+<!-- <A HREF="#site">Go to Site Specific Information</a> -->
+
+
+<h1>Mesh Details</h1>
+
+<p>
+<a name="363F9495doji"> </a>
+
+<img src="../graphics/description.gif">
+
+<p><a name="363F9496doji"> </a>
+Use <i>Mesh Details </i>to control element/node label numbers, and to change group 
+names for each map in the assembly FEM. The software automatically creates a group 
+for each instance in the map. The group contains copies of all the nodes, elements, 
+and coordinate systems of the component FEM. </p>
+
+<p><a name="363F9497doji"> </a>
+Once you append the map to the assembly FEM, you can't change a group name or label. 
+If you're not satisfied with label numbering after the append, delete the map from 
+the assembly FEM and re-enter it with new label numbers.</p>
+
+<p><a name="363F9498doji"> </a><img src="../graphics/usage.gif"></p>
+
+<p><a name="363F9499doji"> </a>To modify group names or label numbers:</p>
+
+<ol>
+	<li><a name="3AAFB2BCdobl"> </a>Decide whether you want to use a start label and increment or an just an offset for the labels.
+		<ul>
+			<li>Pick <i>Use label increment</i> to specify an increment for the labels.</li>
+			<li>Pick <i>Use label offset</i> to specify an offset for all labels.</li><p></p>
+		</ul>
+	</li>
+	<li><a name="363F949Bdoji"> </a>Set the form to display node, element, or physical property table data.<p></p>
+
+<p><a name="3AAFB2BDdobl"> </a>Note: You can only display physical property table data if you picked &nbsp;<i>Create unique physical property tables</i> on the <i>Create FEM from Assembly</i> form.</p></li><p></p>
+
+	<li><a name="363F949Ddoji"> </a>Pick the assembly item/FEM map to modify.</li><p></p>
+	<li><a name="363F949Fdoji"> </a>In the key-in fields below the table, enter a new group name, start label, 
+and increment or offset. </li><p></p>
+	<li><a name="363F94A1doji"> </a>Pick the green <i>Go</i> button (or Enter) to apply the changes.
+
+		<p><a name="36DC3C1Bdoji"> </a>The software checks for label conflicts with data already in the assembly FEM. If 
+it finds conflicts, it reports them and resets the fields to their original values.</p>
+
+		<p><a name="36DC3C1Cdoji"> </a>
+If there are no conflicts, you'll see a value in the &nbsp;<i>End Label </i>column.</p></li>
+
+	<li><a name="363F94A3doji"> </a>Continue to modify other maps. </li><p></p>
+	<li><a name="363F94A5doji"> </a>When changes are complete, pick <i>OK </i>to return to <i>Create FEM from 
+Assembly. </i></li><p></p>
+	<li><a name="363F94A7doji"> </a>Pick <i>Update </i>to append the maps to the assembly FEM. </li><p></p>
+	<li><a name="363F94A9doji"> </a>Pick <i>Mesh Details </i>again to review the label numbers. They will be updated 
+if you previously used defaults.</li>
+</ol>
+
+<p><a name="363F94AAdoji"> </a><img src="../graphics/options.gif"></p>
+
+<p><a name="363F94ABdoji"> </a>Options that need some explanation:</p>
+
+<ul>
+	<li><a name="3AAFB2BEdobl"> </a><i>Use Label Increment</i>/<i>Use Label Offset</i> lets you specify either a start label and increment or an offset to use to control node, element, or physical property table labels.
+</li><p></p>
+
+	<li><a name="3AAFB2BFdobl"> </a>If you pick <i>Use Label Offset</i>, <i>Default to nearest</i> lets you define the 
+default offset for all maps.</li><p></p>
+
+	<li><a name="363F94ACdoji"> </a>Toggle on <i>Element labels same as nodes </i>to make the start 
+labels and increments or offsets the same for elements and nodes. </li><p></p>
+
+	<li><a name="363F94ADdoji"> </a>If you pick <i>Use Label Increment</i>, the start label is 0. If you don't 
+set a value, the software will then take the default, which is the next highest label 
+available in the model. If you set a start label and then want to revert back to 
+the default, just set the start label back to 0.
+
+	<p><a name="363F94AEdoji"> </a>After you have appended the component FEMs to the assembly FEM, the form shows the 
+	actual labels used. </p></li>
+
+	<li><a name="3AAFB2C0dobl"> </a>If you pick <i>Use Label Increment</i>, the label increment (<i>Incr.</i>) is 0. 
+ If you don't set a value, the software will use the <i>Default node </i>(or <i>element</i>)<i> 
+label increment</i> value. As with <i>Start Label, </i>you can always reset a modified 
+increment to the default by entering 0.
+
+	<p><a name="36DC3C1Ddoji"> </a>Once you have appended the component FEMs, <i>Incr. </i>will show the actual increment 
+used.  </p></li>
+
+	<li><a name="36DC3C1Edoji"> </a><i>Group-name prefix </i>lets you change the prefix style for group names. The software automatically assigns group names, and applies a letter or instance hierarchy number 
+as a prefix when a map uses multiple instances.
+
+	<p><a name="36DC3C1Fdoji"> </a>If you use the <i>Letter </i>option, the letter is assigned based on the instance 
+count. That is, the third instance of the assembly item always gets the letter C, 
+even if the first and second instances are not used in any maps. </p></li>
+
+</ul>
+
+<p></p>
+
+<h4><a name="3AAFB2C1dobl"> </a>See Also</h4>
+<ul>
+	<li><a name="3AAFB2C2dobl"> </a><a href="../fem_ug/afemmshd.htm#jveawdobl"><b>Controlling Mesh Details for Assembly 
+FEMs</a></b>
+</li></ul>
+<!-- Site Specific Content Area -->
+<!-- To add site specific information, follow these steps -->
+<!-- 1. Remove the COMMENT tags from around the <HR> and <H1></H1> tags below -->
+<!-- 2. Enter your HTML content (and tags) in the area between the -->
+<!--      <BEGIN HERE> and <END HERE> tags below.  -->
+<!-- 3. Save the file in the appropriate Site Specific area as specified -->
+<!--      in the *Customizing Your Documentation* section of the online Help Library -->
+<!-- 4. Update your site.hlp file as specified in the *Customizing Your Documentation* -->
+<!--      section of the online Help Library -->
+<!-- <HR> -->
+<!-- <H1><I><A NAME="site">Site Specific Information</A></I></H1> -->
+<!-- BEGIN HERE  -->
+
+
+<!-- END HERE -->
+
+<script language="JavaScript" src="../scripts/Footer.js"></script>
+</body>
+</html>
