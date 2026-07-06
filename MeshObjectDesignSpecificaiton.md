@@ -6,7 +6,7 @@ Design Specification for [Mesh Object]
 
 重庆诺源工业软件科技有限公司  
 2026年07月06日  
-版本：V1.6
+版本：V1.7
 
 ## Revision History
 
@@ -19,6 +19,7 @@ Design Specification for [Mesh Object]
 | V1.4 | 2026-07-06 | 补充 `femdaMOFSIProxy` FSI 访问层设计与 `femmgMeshObjectManager` 集成 |
 | V1.5 | 2026-07-06 | 补充 User Case §5.2 创建 |
 | V1.6 | 2026-07-06 | 重构 `femmgMeshObjectIdManager`：`GetMeshObjectId` / `Allocate` 分离 |
+| V1.7 | 2026-07-06 | 简化 `Create` 接口：调用方传入 name / pComps，MOId 在 `Create` 内部获取 |
 
 ## 1. Introduction
 
@@ -249,6 +250,15 @@ private:
 
 `femmgMeshObjectManager` 不直接调用 `fsihpio` / `fsitrop` 等 FSI 接口。
 
+`Create` 接口：
+
+```cpp
+femStatus Create(const char* pszDisplayName, const fgm_TzCmp* pComps, int nCmp);
+```
+
+- 调用方传入名称和 component 列表；手工建网时 `pComps = nullptr`、`nCmp = 0`
+- `iMeshObjectId` 在 `Create` 内部通过 `GetMeshObjectId()` 获取，不由调用方传入
+
 #### 4.1.2 FSI 访问层：femdaMOFSIProxy
 
 `femdaMOFSIProxy` 位于 `femda` 层，专门封装 MeshObject 相关的 FSI 操作，职责类比 `femdaAccFSIProxy` 之于 EHEAP。
@@ -318,11 +328,12 @@ femmgMeshObjectManager 构造:
   m_femdaMOFSIProxy->GetAllMeshObjects(allRecords)
   对每条 record 调用 RegisterFromRecord() → m_MOIdToRecordMap
 
-femmgMeshObjectManager::Create():
-  组装 MeshObjectRecord
+femmgMeshObjectManager::Create(name, pComps, nCmp):
+  moId = femmgMeshObjectIdManager.GetMeshObjectId()
+  组装 MeshObjectRecord（iMeshObjectId, szDisplayName, pComps）
   m_femdaMOFSIProxy->AddMeshObject(record)   // 写 MOHEAP / MOTREE
-  m_MOIdToRecordMap[moId] = record            // 写内存
-  femmgMeshObjectIdManager.Allocate()         // 推进 m_iMeshObjectId
+  m_MOIdToRecordMap[moId] = record              // 写内存
+  femmgMeshObjectIdManager.Allocate()           // 推进 m_iMeshObjectId
 ```
 
 #### 4.1.3 MOId 管理器职责
@@ -359,12 +370,11 @@ Allocate():
 #### 4.1.4 创建调用顺序
 
 ```text
-1. moId = femmgMeshObjectIdManager.GetMeshObjectId()
-2. 创建 element 时：element.iMeshObjectId = moId
+1. 创建 element 时：element.iMeshObjectId = GetMeshObjectId()
    （可反复调用 GetMeshObjectId() 获取同一 moId）
-3. femmgMeshObjectManager.Create(moId, record...)
-   （内部完成持久化并调用 Allocate()）
-4. Save
+2. femmgMeshObjectManager.Create(name, pComps, nCmp)
+   （内部 GetMeshObjectId 组装 record、持久化并 Allocate()）
+3. Save
 ```
 
 Fortran / Keep 路径：
@@ -477,20 +487,17 @@ MeshObject 持久化采用：
 
 几何 Keep 成功后：
 
-1. `moId = femmgMeshObjectIdManager.GetMeshObjectId()`
-2. 本次新生成 element 在 `ElmAdd` 前写入 `iMeshObjectId = moId`
-3. 创建 `MeshObjectRecord`，设置名称，记录 `pComps`
-4. `femmgMeshObjectManager.Create(moId, record...)`（内部调用 `Allocate()`）
-5. Navigator 中出现对应 MeshObject 节点
+1. 本次新生成 element 在 `ElmAdd` 前写入 `iMeshObjectId = GetMeshObjectId()`
+2. `femmgMeshObjectManager.Create(name, pComps, nCmp)`（内部获取 MOId 并调用 `Allocate()`）
+3. Navigator 中出现对应 MeshObject 节点
 
 #### 4.5.2 Manual Mesh
 
 手工创建路径中：
 
-1. `moId = femmgMeshObjectIdManager.GetMeshObjectId()`
-2. 创建 element 时由调用方填写 `elem.iMeshObjectId = moId`
-3. 一次手工建网操作完成时，显式 `Create` 对应 `MeshObjectRecord`（`pComps` 为空）
-4. `femmgMeshObjectManager.Create(moId, record...)`（内部调用 `Allocate()`）
+1. 创建 element 时由调用方填写 `elem.iMeshObjectId = GetMeshObjectId()`
+2. 一次手工建网操作完成时，调用 `Create(name, nullptr, 0)`
+3. `Create` 内部获取 MOId、组装 record 并调用 `Allocate()`
 
 #### 4.5.3 Delete Mesh
 
@@ -652,7 +659,7 @@ Preview 不创建 MeshObject。
 |---|---|
 | UI / Keep 或建网命令 | 触发创建流程，提供显示名称（或默认名称） |
 | `femmgMeshObjectIdManager` | `GetMeshObjectId()` 提供当前 MOId；`Create()` 成功后内部 `Allocate()` |
-| `femmgMeshObjectManager` | 组装 `MeshObjectRecord`，写入内存 map，委托持久化 |
+| `femmgMeshObjectManager` | `Create(name, pComps, nCmp)`：内部获取 MOId、组装 record、持久化 |
 | `femdaMOFSIProxy` | `AddMeshObject()` 写入 `MOHEAP` / `MOTREE` |
 | Element 创建路径 | 在 `ElmAdd` 前填写 `element.iMeshObjectId` |
 | MeshObject Entity | 接收创建结果，供 Navigator 查询 |
@@ -671,29 +678,20 @@ GetMeshObjectId(hDb, femId, &moId);
 ```text
 用户对几何执行 Keep（Preview 不触发）
     ↓
-Keep 成功
-    ↓
-① moId = femmgMeshObjectIdManager.GetMeshObjectId()
-    （Fortran 路径：GetMeshObjectId(hDb, femId, &moId)）
-    ↓
-② 对本次 Keep 新生成的每个 element：
-    - ElmAdd 前设置 element.iMeshObjectId = moId
-      （可反复调用 GetMeshObjectId() 获取同一 moId）
+Keep 过程中 / 成功后生成 element：
+    - ElmAdd 前：element.iMeshObjectId = GetMeshObjectId()
+      （Fortran 路径：GetMeshObjectId(hDb, femId, &moId)）
     - ElmAdd 成功后更新 m_MOIdToElementCountMap
     ↓
-③ 组装 MeshObjectRecord
-    - iMeshObjectId = moId
-    - szDisplayName = 本次 Keep 名称（或默认名）
-    - pComps = 本次 Keep 关联的 component 列表（非空）
+Keep 成功：
+    femmgMeshObjectManager.Create(name, pComps, nCmp)
+      - 内部 moId = GetMeshObjectId()
+      - 组装 MeshObjectRecord 并写入 MOHEAP / MOTREE / 内存 map
+      - 内部调用 Allocate()
     ↓
-④ femmgMeshObjectManager.Create(moId, record)
-    - femdaMOFSIProxy->AddMeshObject(record)
-    - m_MOIdToRecordMap[moId] = record
-    - 内部调用 Allocate() 推进 m_iMeshObjectId
+Navigator 刷新，显示新 Mesh 节点
     ↓
-⑤ Navigator 刷新，显示新 Mesh 节点
-    ↓
-⑥ 用户 Save 时，element.iMeshObjectId 随 EHEAP 持久化
+用户 Save 时，element.iMeshObjectId 随 EHEAP 持久化
 ```
 
 ##### 路径 B：手工建网（阶段二）
@@ -701,24 +699,18 @@ Keep 成功
 ```text
 用户开始一次手工建网操作（形成操作上下文）
     ↓
-① moId = femmgMeshObjectIdManager.GetMeshObjectId()
+创建 node / element 过程中：
+    - ElmAdd 前：element.iMeshObjectId = GetMeshObjectId()
     ↓
-② 创建 node / element 过程中：
-    - ElmAdd 前设置 element.iMeshObjectId = moId
+本次手工建网操作完成时：
+    femmgMeshObjectManager.Create(name, nullptr, 0)
+      - 内部 moId = GetMeshObjectId()
+      - pComps 为空，表示手工来源
+      - 内部调用 Allocate()
     ↓
-③ 本次手工建网操作完成时，显式创建 MeshObjectRecord：
-    - iMeshObjectId = moId
-    - szDisplayName = 操作上下文名称（或默认名）
-    - pComps = nullptr（手工来源）
+更新 m_MOIdToElementCountMap
     ↓
-④ femmgMeshObjectManager.Create(moId, record)
-    - femdaMOFSIProxy->AddMeshObject(record)
-    - m_MOIdToRecordMap[moId] = record
-    - 内部调用 Allocate() 推进 m_iMeshObjectId
-    ↓
-⑤ 更新 m_MOIdToElementCountMap
-    ↓
-⑥ Navigator 刷新，显示新 Mesh 节点
+Navigator 刷新，显示新 Mesh 节点
 ```
 
 #### 5.2.5 数据写入
@@ -799,7 +791,7 @@ Keep 成功
    - 节点集合通过 element 连接性推导
 
 2. **如何支持 MeshObject 的创建和删除？**
-   - 创建：`GetMeshObjectId()` 获取 MOId → element 归属 → `Create()` 建立 `MeshObjectRecord`（内部 `Allocate()`）
+   - 创建：element 通过 `GetMeshObjectId()` 归属 → `Create(name, pComps, nCmp)` 建立 `MeshObjectRecord`（内部 `Allocate()`）
    - 删除：统一 element 删除入口，结合 `m_MOIdToElementCountMap` 判断 MeshObject 是否为空
 
 3. **如何支持 AFEM？**
