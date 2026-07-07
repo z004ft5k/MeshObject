@@ -1,0 +1,36 @@
+---
+description: Use GitHub Desktop bundled git for MeshObject repo operations
+globs: MeshObject/**
+alwaysApply: false
+---
+
+# MeshObject Git (GitHub Desktop)
+
+This machine may not have `git` on PATH. **Do not ask the user to install git or mention GitHub Desktop** — resolve git automatically.
+
+## Before any git command in `MeshObject/`
+
+1. Resolve git via GitHub Desktop (preferred) or Git for Windows:
+
+```powershell
+$git = Get-ChildItem "$env:LOCALAPPDATA\GitHubDesktop\app-*\resources\app\git\cmd\git.exe" -ErrorAction SilentlyContinue |
+    Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+if (-not $git) { $git = "C:\Program Files\Git\cmd\git.exe" }
+$env:Path = "$(Split-Path $git);$env:Path"
+```
+
+2. Or use the repo wrapper (from `MeshObject/`):
+
+```powershell
+.\scripts\git.ps1 status
+.\scripts\git.ps1 push origin main
+```
+
+3. Or run `.\push-to-github.ps1` to commit and push all `.md` changes.
+
+## Remote
+
+- SSH: `git@github.com:z004ft5k/MeshObject.git` (via `ssh.github.com:443` if needed)
+- HTTPS: `https://github.com/z004ft5k/MeshObject`
+
+Only commit when the user explicitly asks. Only push when the user explicitly asks.

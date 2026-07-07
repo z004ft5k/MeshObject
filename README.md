@@ -4,7 +4,7 @@ MeshObject 设计文档与讨论纪要的版本库。
 
 | 文档 | 说明 |
 |---|---|
-| [MeshObjectDesignSpecificaiton.md](./MeshObjectDesignSpecificaiton.md) | 主设计规格（DS），当前 V1.8 |
+| [MeshObjectDesignSpecificaiton.md](./MeshObjectDesignSpecificaiton.md) | 主设计规格（DS），当前 V1.1 |
 | [MeshObject-Discussion-Notes-2026-07-06.md](./MeshObject-Discussion-Notes-2026-07-06.md) | 2026-07-06 讨论纪要 |
 | [MeshObject-Discussion-Notes-2026-07-03.md](./MeshObject-Discussion-Notes-2026-07-03.md) | 2026-07-03 讨论纪要 |
 | [MeshObject-Discussion-Notes-2026-07-02.md](./MeshObject-Discussion-Notes-2026-07-02.md) | 2026-07-02 讨论纪要 |
@@ -18,11 +18,21 @@ MeshObject 设计文档与讨论纪要的版本库。
 
 ## 日常更新
 
+本机未单独安装 Git 时，使用 **GitHub Desktop 自带的 git**（脚本会自动查找）。
+
 每次与 Cursor 讨论并更新 DS 后：
 
 ```powershell
 cd "C:\Users\xin.zeng\Documents\CurProjects\MeshObject"
-git add .
-git commit -m "docs: 简要说明本次改了什么"
-git push
+.\scripts\git.ps1 add .
+.\scripts\git.ps1 commit -m "docs: 简要说明本次改了什么"
+.\scripts\git.ps1 push origin main
 ```
+
+或一键提交并推送所有 `.md`：
+
+```powershell
+.\push-to-github.ps1
+```
+
+GitHub Desktop 的 **History** 标签也可查看 diff 与推送状态。
