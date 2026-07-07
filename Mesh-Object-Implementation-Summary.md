@@ -144,7 +144,7 @@ femmgModelManager::Instance()
 | `femmgMoIdMgrGetNextId` | Save 时写入段头 |
 | `fmmoidal_` | Fortran 分配入口 |
 
-阶段 2 可写死 `moId=1`；接 IdManager 后每次 Keep 自动递增。
+阶段 2 可写死 `moId=1`；接 IdAllocator 后每次 Keep 自动递增。
 
 ---
 
@@ -308,7 +308,7 @@ mstKeepMesh:
 | `fsihpcr` / `fsihpio` 接 MOHEAP | `femmgMoFSIProxy` TODO |
 | `femElem.iMeshObjectId` | EHEAP 或 ElemAD slot |
 | `deleteElm` / `ElmAdd` 挂钩 | OnElementRemoved / OnElementAdded + count |
-| MOHEAP 段头 `nextMeshObjectId` | Open/Save 与 IdMgr 同步 |
+| MOHEAP 段头 `nextMeshObjectId` | Open/Save 与 IdAlloc 同步 |
 | MOTREE | 阶段 3 |
 | KeepSession | 可选，Keep 批量建网 |
 | Navigator / Delete / Show-Hide | 阶段 3 |

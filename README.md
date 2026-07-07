@@ -4,10 +4,8 @@ MeshObject 设计文档与讨论纪要的版本库。
 
 | 文档 | 说明 |
 |---|---|
-| [MeshObjectDesignSpecificaiton.md](./MeshObjectDesignSpecificaiton.md) | 主设计规格（DS），当前 V1.1 |
-| [MeshObject-Discussion-Notes-2026-07-06.md](./MeshObject-Discussion-Notes-2026-07-06.md) | 2026-07-06 讨论纪要 |
-| [MeshObject-Discussion-Notes-2026-07-03.md](./MeshObject-Discussion-Notes-2026-07-03.md) | 2026-07-03 讨论纪要 |
-| [MeshObject-Discussion-Notes-2026-07-02.md](./MeshObject-Discussion-Notes-2026-07-02.md) | 2026-07-02 讨论纪要 |
+| [MeshObjectDesignSpecificaiton.md](./MeshObjectDesignSpecificaiton.md) | 主设计规格（DS），当前 V1.2 |
+| [MeshObject-Discussion-Notes.md](./MeshObject-Discussion-Notes.md) | 讨论纪要（累积，每次讨论追加） |
 | [Mesh-Object-Design-Discussion.md](./Mesh-Object-Design-Discussion.md) | 早期架构讨论 |
 | [Mesh-Object-Implementation-Summary.md](./Mesh-Object-Implementation-Summary.md) | 实现讨论总结 |
 
