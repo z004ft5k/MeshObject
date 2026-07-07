@@ -7,14 +7,17 @@ Design Specification for [Mesh Object]
 
 重庆诺源工业软件科技有限公司  
 2026年07月07日  
-版本：V1.1
+版本：V1.2
 
 ## Revision History
 
-| 版本 | 日期 | 说明 |
-|---|---|---|
-| V1.0 | 2026-07-02 | 初版整理，结合现有讨论形成 MeshObject 设计方案 |
+
+| 版本   | 日期         | 说明                                                    |
+| ---- | ---------- | ----------------------------------------------------- |
+| V1.0 | 2026-07-02 | 初版整理，结合现有讨论形成 MeshObject 设计方案                         |
 | V1.1 | 2026-07-07 | 补充 Meshes 节点归属（`eMeshesType`）；同步 §5.3/§5.4；对齐飞书 FS 术语 |
+| V1.2 | 2026-07-07 | §5.5–§5.7 占位；§5.2/§5.3 User Case 用语（几何网格 / 手工网格） |
+
 
 ## 1. Introduction
 
@@ -71,28 +74,32 @@ Design Specification for [Mesh Object]
 
 ### 2.3 设计任务分解
 
-| 任务 | 设计内容 |
-|---|---|
-| 数据模型设计 | 定义 MOHeapRecord、`element.iMeshObjectId`、component 列表等核心数据 |
-| MeshObjectId 管理设计 | 定义 `femmgMeshObjectIdManager` 的职责与分配规则 |
-| 持久化设计 | 设计 MOHEAP、MOTREE 和变长 record 布局；`femdaMOFSIProxy` 负责 FSI 读写 |
-| 运行时管理设计 | 定义 `femmgMeshObjectManager` 的职责和运行时缓存 |
-| Entity 封装设计 | 提供对象化接口，承接 UI 层调用 |
-| Navigator 集成设计 | 定义 Mesh 节点显示和操作入口 |
-| 生命周期设计 | 定义 Create、Delete、Save、Open 等主流程 |
+
+| 任务                | 设计内容                                                       |
+| ----------------- | ---------------------------------------------------------- |
+| 数据模型设计            | 定义 MOHeapRecord、`element.iMeshObjectId`、component 列表等核心数据  |
+| MeshObjectId 管理设计 | 定义 `femmgMeshObjectIdManager` 的职责与分配规则                     |
+| 持久化设计             | 设计 MOHEAP、MOTREE 和变长 record 布局；`femdaMOFSIProxy` 负责 FSI 读写 |
+| 运行时管理设计           | 定义 `femmgMeshObjectManager` 的职责和运行时缓存                      |
+| Entity 封装设计       | 提供对象化接口，承接 UI 层调用                                          |
+| Navigator 集成设计    | 定义 Mesh 节点显示和操作入口                                          |
+| 生命周期设计            | 定义 Create、Delete、Save、Open 等主流程                            |
+
 
 ### 2.4 Terminology
 
-| 术语 | 说明 |
-|---|---|
-| MeshObject | 逻辑概念名称 |
-| Mesh | UI 中的显示名称（单个 MeshObject 节点） |
-| Meshes 节点 | Navigator 中按维度组织的逻辑容器：`1D Meshes` / `2D Meshes` / `3D Meshes` / `Others Meshes` |
-| `eMeshesType` | MeshObject 归属的 Meshes 类型，Create 时写入 MOHEAP，Rename 不改变 |
-| MeshObjectRecord | Src Layer 中的运行时 struct |
-| MeshObject Entity | Entity 层对象封装 |
-| femmgMeshObjectManager | Fem 级 MeshObject 管理器 |
-| element.iMeshObjectId | 成员归属字段 |
+
+| 术语                     | 说明                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| MeshObject             | 逻辑概念名称                                                                          |
+| Mesh                   | UI 中的显示名称（单个 MeshObject 节点）                                                     |
+| Meshes 节点              | Navigator 中按维度组织的逻辑容器：`1D Meshes` / `2D Meshes` / `3D Meshes` / `Others Meshes` |
+| `eMeshesType`          | MeshObject 归属的 Meshes 类型，Create 时写入 MOHEAP，Rename 不改变                           |
+| MeshObjectRecord       | Src Layer 中的运行时 struct                                                          |
+| MeshObject Entity      | Entity 层对象封装                                                                    |
+| femmgMeshObjectManager | Fem 级 MeshObject 管理器                                                            |
+| element.iMeshObjectId  | 成员归属字段                                                                          |
+
 
 ## 3. High Level Design
 
@@ -407,14 +414,16 @@ Fem
 
 #### 4.3.3 Meshes 归属规则
 
-| 规则 | 说明 |
-|---|---|
-| Create 时确定 | `eMeshesType` 在 `Create()` 成功时写入，持久化到 MOHEAP |
-| Rename 不改变 | 重命名只改 `szDisplayName`，`eMeshesType` 不变 |
-| element 变化不改变 | Remesh、部分删 element 等不导致 Mesh 在 Meshes 节点间迁移 |
+
+| 规则            | 说明                                                         |
+| ------------- | ---------------------------------------------------------- |
+| Create 时确定    | `eMeshesType` 在 `Create()` 成功时写入，持久化到 MOHEAP               |
+| Rename 不改变    | 重命名只改 `szDisplayName`，`eMeshesType` 不变                     |
+| element 变化不改变 | Remesh、部分删 element 等不导致 Mesh 在 Meshes 节点间迁移                |
 | 几何 Keep | 依据 Define Mesh / 划分设置的主维度或单元族判定（Beam→1D，Shell→2D，Solid→3D） |
 | 手工建网 | 依据本次归属 element 的主维度；混合维度归入 `Others` |
-| 无法判定 | 默认 `FEMMG_MO_MESHES_OTHERS` |
+| 无法判定          | 默认 `FEMMG_MO_MESHES_OTHERS`                                |
+
 
 #### 4.3.4 用户操作
 
@@ -544,12 +553,12 @@ Navigator 按 eMeshesType 分组刷新：Fem → 1D/2D/3D/Others Meshes → Mesh
 
 ### 5.2 创建
 
-#### 5.2.4 主流程
+#### 主流程
 
-##### 路径 A：几何 Keep（阶段一）
+##### 路径 A：几何网格 Keep（阶段一）
 
 ```text
-用户对几何执行 Keep
+用户对几何网格执行 Keep
     ↓
 Keep 过程中 / 成功后生成 element：
     - element.iMeshObjectId = GetCurrentMeshObjectId()
@@ -566,20 +575,20 @@ Keep 成功：
 Navigator 刷新，对应 Meshes 节点下显示新 Mesh 节点
 ```
 
-##### 路径 B：手工建网（阶段二）
+##### 路径 B：手工网格（阶段二）
 
 ```text
-用户开始一次手工建网操作（形成操作上下文）
+用户开始一次手工网格操作（形成操作上下文）
     ↓
 创建 node / element 过程中：
     - element.iMeshObjectId = GetCurrentMeshObjectId()
     - 更新 m_MOIdToElementCountMap
     ↓
-本次手工建网操作完成时：
+本次手工网格操作完成时：
     femmgMeshObjectManager.Create(name, nullptr, 0)
       - 内部 moId = GetCurrentMeshObjectId()
       - 判定 eMeshesType（本次 element 主维度）
-      - pComps 为空，表示手工来源
+      - pComps 为空，表示手工网格来源
       - 内部调用 Allocate()
     ↓
 Navigator 刷新，对应 Meshes 节点下显示新 Mesh 节点
@@ -593,11 +602,13 @@ Navigator 刷新，对应 Meshes 节点下显示新 Mesh 节点
 
 用户侧有三类触发入口，但元数据收尾机制相同——均由 `ElemRemove` 挂钩判定：
 
-| 入口 | 触发方式 | 如何到达 ElemRemove |
-|---|---|---|
-| 整包删除 | Navigator Delete Mesh 节点 | `MeshObjectDelete` 编排：geo 调 `GeoMeshDel`，手工 O(N) 扫描后逐个 `ElemRemove` |
-| 几何网格删除 | 用户通过已有几何删除路径删几何 | 已有删几何 API 内部级联 `ElemRemove` |
-| 逐 element 删除 | 用户通过已有 element 删除路径删单元 | 直接 `ElemRemove` |
+
+| 入口           | 触发方式                     | 如何到达 ElemRemove                                                       |
+| ------------ | ------------------------ | --------------------------------------------------------------------- |
+| 整包删除         | Navigator Delete Mesh 节点 | `MeshObjectDelete` 编排：几何网格调 `GeoMeshDel`，手工网格 O(N) 扫描后逐个 `ElemRemove` |
+| 几何网格删除       | 用户通过已有几何删除路径删几何          | 已有删几何 API 内部级联 `ElemRemove`                                           |
+| 逐 element 删除 | 用户通过已有 element 删除路径删单元   | 直接 `ElemRemove`                                                       |
+
 
 #### 主流程
 
@@ -642,11 +653,11 @@ MeshObjectDelete(hDb, femId, moId)
     ↓
 record = femmgMeshObjectManager.QueryById(moId)
     ↓
-路径 A（几何 Keep，pComps 非空）：
+路径 A（几何网格 Keep，`pComps` 非空）：
     GeoMeshDel(record.pComps, record.nCmp)     // 已有删几何网格 API
       → 内部级联 ElemRemove（同入口 A）
     ↓
-路径 B（手工建网，pComps 为空）：
+路径 B（手工网格，`pComps` 为空）：
     扫描全部 element（O(N)，阶段一接受）
       filter: element.iMeshObjectId == moId
       → 逐个 ElemRemove(elPtr)              // 同入口 B
@@ -687,13 +698,27 @@ femStatus Rename(int moId, const char* pszDisplayName);
 
 #### 规则
 
-| 规则 | 说明 |
-|---|---|
-| 仅改名称 | Rename 只修改 `szDisplayName`；不修改 `iMeshObjectId`、`eMeshesType`、`pComps`、element 归属 |
-| MOId 不变 | Rename 不触发 `Allocate()`，不影响 `m_iCurrentMeshObjectId` |
-| 调用分层 | Rename 为纯元数据操作，由 `femmgMeshObjectManager` 直接完成；不需调用 element / 几何层 API |
-| 持久化 | Rename 成功时同步更新 MOHEAP record；下次 Save 与运行时一致 |
-| 失败回滚 | 校验失败（moId 不存在、名称为空等）则不修改 map 与 MOHEAP |
+
+| 规则      | 说明                                                                               |
+| ------- | -------------------------------------------------------------------------------- |
+| 仅改名称    | Rename 只修改 `szDisplayName`；不修改 `iMeshObjectId`、`eMeshesType`、`pComps`、element 归属 |
+| MOId 不变 | Rename 不触发 `Allocate()`，不影响 `m_iCurrentMeshObjectId`                             |
+| 调用分层    | Rename 为纯元数据操作，由 `femmgMeshObjectManager` 直接完成；不需调用 element / 几何层 API            |
+| 持久化     | Rename 成功时同步更新 MOHEAP record；下次 Save 与运行时一致                                      |
+| 失败回滚    | 校验失败（moId 不存在、名称为空等）则不修改 map 与 MOHEAP                                            |
+
+
+### 5.5 AFEM Map
+
+待补充
+
+### 5.6 Copy FEM
+
+待补充
+
+### 5.7 几何修改 / Remesh
+
+待补充
 
 ## 6. Appendix
 
@@ -721,31 +746,25 @@ femStatus Rename(int moId, const char* pszDisplayName);
 ### 6.3 关键问题
 
 1. **Src 层需要构建 MeshObject 对象，对象应该存放什么数据？（与 mst_zRegion 关联？怎么关联手动创建的 node 和 element？）**
-   - 手动创建的 element 也会有 `iMeshObjectId`，meshObject 不需要和 `mst_zRegion` 关联
-
+  - 手动创建的 element 也会有 `iMeshObjectId`，meshObject 不需要和 `mst_zRegion` 关联
 2. **mst_zRegion / mst_zFace / mst_zEdge 如何存放 meshObjectId？**
-   - 不需要存放，只要有 element 和 `iMeshObjectId` 就行
-
+  - 不需要存放，只要有 element 和 `iMeshObjectId` 就行
 3. **如何支持 MeshObject 对应到 RibbonBar 的创建和删除操作，部分删除，全删除？**
-   - 删除 element 的入口是统一的，只要在最后检查删除的 element 的 `iMeshObjectId` 对应的 meshObject 还有没有 element 就行
-   - 缓存 `map<int, int> m_MOIdToElementCountMap;  // MOId → count`
-
+  - 删除 element 的入口是统一的，只要在最后检查删除的 element 的 `iMeshObjectId` 对应的 meshObject 还有没有 element 就行
+  - 缓存 `map<int, int> m_MOIdToElementCountMap;  // MOId → count`
 4. **如何支持 AFEM？**
-   - 待补充
-
+  - 待补充
 5. **如何支持 Copy FEM 操作？**
-   - 待补充
-
+  - 待补充
 6. **如何支持 CheckIn、CheckOut 操作？**
-   - 待补充
-
+  - 待补充
 7. **如何支持保存 mf1、打开 mf1？**
-   - 在 fem 的 field2 新建两个段存放 heap 和 tree
-
+  - 在 fem 的 field2 新建两个段存放 heap 和 tree
 8. **如何支持打开 2606 之前的 mf1 和 unv，创建导入规则？**
-   - 待补充
+  - 待补充
 
 ### 6.4 后续设计章节
 
 - Model Entity 层
 - Navigator-UI 层
+
