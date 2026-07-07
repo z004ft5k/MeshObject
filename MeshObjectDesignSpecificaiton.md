@@ -18,7 +18,7 @@ Design Specification for [Mesh Object]
 | V1.1 | 2026-07-07 | 补充 Meshes 节点归属（`eMeshesType`）；同步 §5.3/§5.4；对齐飞书 FS 术语 |
 | V1.2 | 2026-07-07 | §5.5–§5.7 占位；§5.2/§5.3 User Case 用语（几何网格 / 手工网格） |
 | V1.3 | 2026-07-07 | `eMeshObjectType` 取代 `eMeshesType`；`Create(pComps, nCmp, eType)` 与 FS 默认命名规则 |
-| V1.4 | 2026-07-08 | 默认名序号改为「最小可用空位」策略 |
+| V1.4 | 2026-07-08 | 默认名序号改为「最小可用空位」策略；补充 `g_MOTypeInfoTable` 静态映射表 |
 
 
 ## 1. Introduction
@@ -177,16 +177,46 @@ struct MeshObjectRecord
 
 **类型映射表（实现用，可扩展）**
 
-每种已定义类型在静态表中配置：Meshes 分组、默认名维度前缀、默认名类型段、Information 展示用 Type 字符串。新增类型时在对应区间内取值并补充表项；**更多类型待产品确定**。
+每种已定义类型在静态表中配置：Meshes Collector 分组、默认名维度前缀、默认名类型段、Navigator / Information 展示字符串。新增类型时在对应枚举区间内取值并补充表项；**更多类型待产品确定**。
 
-| `eMeshObjectType` | 默认名维度前缀 | 默认名类型段 | 示例默认名 |
-| --- | --- | --- | --- |
-| `BEAM` | `1d` | `beam` | `1d_beam_1` |
-| `SHELL` | `2d` | `shell` | `2d_shell_1` |
-| `SOLID` | `3d` | `solid` | `3d_solid_1` |
-| `RIGID` | `other` | `rigid` | `other_rigid_1` |
-| `CONSTRAINT` | `other` | `constraint` | `other_constraint_1` |
-| `UNKNOWN` | `other` | `unknown` | `other_unknown_1` |
+```cpp
+struct femmgMeshObjectTypeInfo
+{
+    femmgMeshObjectType eType;
+    int                 iCollectorGroup;   // 1=1D, 2=2D, 3=3D, 4=Others
+    const char*         pszDimPrefix;      // 默认名维度前缀
+    const char*         pszTypeSuffix;     // 默认名类型段
+    const char*         pszCollectorUi;    // Navigator：如 "1D Meshes"
+    const char*         pszTypeUi;         // Information Type 列
+};
+
+static const femmgMeshObjectTypeInfo g_MOTypeInfoTable[] =
+{
+    { FEMMG_MO_TYPE_BEAM,       1, "1d",    "beam",       "1D Meshes",     "Beam" },
+    { FEMMG_MO_TYPE_SHELL,      2, "2d",    "shell",      "2D Meshes",     "Shell" },
+    { FEMMG_MO_TYPE_SOLID,      3, "3d",    "solid",      "3D Meshes",     "Solid" },
+    { FEMMG_MO_TYPE_RIGID,      4, "other", "rigid",      "Others Meshes", "Rigid" },
+    { FEMMG_MO_TYPE_CONSTRAINT, 4, "other", "constraint", "Others Meshes", "Constraint" },
+    { FEMMG_MO_TYPE_UNKNOWN,    4, "other", "unknown",    "Others Meshes", "Unknown" },
+};
+```
+
+查表辅助（示意）：
+
+```cpp
+const femmgMeshObjectTypeInfo& GetMOTypeInfo(femmgMeshObjectType eType);
+```
+
+| `eMeshObjectType` | Collector | 默认名维度前缀 | 默认名类型段 | 示例默认名 |
+| --- | --- | --- | --- | --- |
+| `BEAM` | 1D | `1d` | `beam` | `1d_beam_1` |
+| `SHELL` | 2D | `2d` | `shell` | `2d_shell_1` |
+| `SOLID` | 3D | `3d` | `solid` | `3d_solid_1` |
+| `RIGID` | Others | `other` | `rigid` | `other_rigid_1` |
+| `CONSTRAINT` | Others | `other` | `constraint` | `other_constraint_1` |
+| `UNKNOWN` | Others | `other` | `unknown` | `other_unknown_1` |
+
+> `iCollectorGroup` 亦可通过枚举值区间派生（见上表）；静态表中显式列出，便于 `GetMOTypeInfo` 一次查全。
 
 **默认显示名规则（对齐 FS §3.3.4）**
 

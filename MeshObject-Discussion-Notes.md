@@ -205,6 +205,17 @@ enum femmgMeshObjectType
 };
 ```
 
+**静态映射表 `g_MOTypeInfoTable`（DS §3.3.1）：**
+
+```cpp
+{ FEMMG_MO_TYPE_BEAM,       1, "1d",    "beam",       "1D Meshes",     "Beam" },
+{ FEMMG_MO_TYPE_SHELL,      2, "2d",    "shell",      "2D Meshes",     "Shell" },
+{ FEMMG_MO_TYPE_SOLID,      3, "3d",    "solid",      "3D Meshes",     "Solid" },
+{ FEMMG_MO_TYPE_RIGID,      4, "other", "rigid",      "Others Meshes", "Rigid" },
+{ FEMMG_MO_TYPE_CONSTRAINT, 4, "other", "constraint", "Others Meshes", "Constraint" },
+{ FEMMG_MO_TYPE_UNKNOWN,    4, "other", "unknown",    "Others Meshes", "Unknown" },
+```
+
 - 每个 xD Meshes 区间预留 **100** 个枚举空位供扩展
 - **不**单独定义 MeshesCollector 枚举；Navigator 分组由枚举值区间派生（1/2/3/4 → 1D/2D/3D/Others Meshes）
 - `eMeshObjectType` 由 **Create 调用方传入**（Keep / 手工上下文），Manager 不推断
