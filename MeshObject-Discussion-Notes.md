@@ -4,11 +4,12 @@
 
 ---
 
-## 最新状态（截至 2026-07-07）
+## 最新状态（截至 2026-07-08）
 
 ### DS 版本
 
 - 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.4**
+- 讨论纪要：单一文件 `MeshObject-Discussion-Notes.md`（本文件）
 
 ### User Case 进度
 
@@ -50,11 +51,12 @@
 
 1. §5.5 AFEM Map 或 §5.6 Copy FEM（择一）
 2. Info User Case（若阶段一需要）
-3. 飞书 Wiki 与 GitHub V1.2 同步
+3. 补充 `eMeshObjectType` 更多类型及与手工入口的映射
+4. 飞书 Wiki 与 GitHub V1.4 同步
 
 ### 关键一句话
 
-> **`eMeshObjectType` 持久化网格类型，Meshes 分组由枚举区间派生；`Create` 无 name 参数，默认名在 Manager 内按 FS 生成；删除走 `ElemRemove` 挂钩收尾。**
+> **`Create(pComps, nCmp, eType)` 无 name；默认名在 Manager 内按 `g_MOTypeInfoTable` 补空位生成；`eMeshObjectType` 持久化类型，Meshes 分组查表；Id 由 IdAllocator 管，删除走 `ElemRemove` 挂钩。**
 
 ---
 
@@ -430,3 +432,54 @@ Allocate()
 - 混合 / 无法判定 → `UNKNOWN` → Others，`other_unknown_N`；Fem 内显示名唯一
 - 更多网格类型待产品确定后补充枚举与映射表
 - 默认名序号：**补空位**（最小未占用编号），不用高水位计数器
+
+---
+
+### 2026-07-08
+
+**主题：** 讨论纪要合并；IdAllocator 重命名；家里 SSH 配置；默认命名与 `eMeshObjectType` 重构；FS 对齐。
+
+**工程与协作：**
+
+- 四份按日期的讨论纪要合并为 **`MeshObject-Discussion-Notes.md`**，后续只在此文件追加
+- 家里 PC 配置 SSH（`~/.ssh/config` → `ssh.github.com:443`）；remote 改为 `git@github.com:...`；Cursor 命令行可 push
+- GitHub 最新：`0ce1542`（main）
+
+**DS 变更（V1.2 → V1.4）：**
+
+| 版本 | 内容 |
+|---|---|
+| （commit） | 纪要合并；`femmgMeshObjectIdManager` → **`femmgMeshObjectIdAllocator`** |
+| V1.3 | `eMeshObjectType` 取代 `eMeshesType`；`Create(pComps, nCmp, eType)`；FS 默认命名；Fem 内唯一 |
+| V1.4 | 默认名序号**补空位**；补充 **`g_MOTypeInfoTable`** 静态映射表 |
+
+**命名与 Create（已确认）：**
+
+| 项 | 结论 |
+|---|---|
+| `Create` 接口 | `Create(pComps, nCmp, eType)`，**无** `name` 参数 |
+| 默认名生成 | `femmgMeshObjectManager::GenerateDefaultDisplayName(eType)` |
+| IdAllocator | **不**承担命名，只管 MOId |
+| `eType` 来源 | **调用方传入**（Keep / 手工上下文）；Manager 不从 element 或划分设置推断 |
+| 混合 / 无法判定 | `FEMMG_MO_TYPE_UNKNOWN` → Others，`other_unknown_N` |
+| Fem 内重名 | Create 自动命名与 Rename 均校验；Rename 重名拒绝 |
+| 序号策略 | **补空位**：`1,2,4` → 下一个是 `3`；不用高水位计数器 |
+
+**`eMeshObjectType`（已确认）：**
+
+- 单一枚举，**不**单独定义 MeshesCollector 枚举
+- 每类 xD Meshes 预留 **100** 个枚举空位：`1..100`（1D）、`101..200`（2D）、`201..300`（3D）、`301..400`（Others）
+- 当前已定义：BEAM(1)、SHELL(101)、SOLID(201)、RIGID(301)、CONSTRAINT(302)、UNKNOWN(0)
+- **更多类型待产品确定**
+- 静态表 `g_MOTypeInfoTable`：含 `iCollectorGroup`、默认名前缀/类型段、Navigator / Info 展示串（DS §3.3.1）
+
+**参考文档：**
+
+- FS 本地副本：`C:\Downloads\Function Specification\Function Specification.md`（默认名 §3.3.4）
+
+**待下次继续：**
+
+- §5.5 AFEM Map / §5.6 Copy FEM
+- Info User Case
+- 补充更多 `eMeshObjectType` 与手工入口映射
+- 飞书 Wiki 与 GitHub V1.4 同步
