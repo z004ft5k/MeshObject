@@ -8,7 +8,7 @@
 
 ### DS 版本
 
-- 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.2**
+- 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.3**
 
 ### User Case 进度
 
@@ -43,7 +43,7 @@
 - `RemoveMeshObject`（元数据 + MOHEAP）
 - `GetCurrentMeshObjectId` C/Fortran 桥（命名与 DS 一致）
 - `femmgMeshObjectIdAllocator` 按新 API 实现（`GetMeshObjectId` / `Allocate`）
-- `femmgMeshObjectManager::Create(name, pComps, nCmp)` 及内部 `Allocate()`
+- `femmgMeshObjectManager::Create(pComps, nCmp, eType)` 及内部 `GenerateDefaultDisplayName()`、`Allocate()`
 - `femdaMOFSIProxy` 与 Manager 集成
 
 ### 建议下次讨论顺序
@@ -54,7 +54,7 @@
 
 ### 关键一句话
 
-> **删除统一走 `ElemRemove` 挂钩 + map 计数收尾；仅手工网格整包删除编排为 O(N)；DS 只写已确认内容；GitHub 为版本真相。**
+> **`eMeshObjectType` 持久化网格类型，Meshes 分组由枚举区间派生；`Create` 无 name 参数，默认名在 Manager 内按 FS 生成；删除走 `ElemRemove` 挂钩收尾。**
 
 ---
 
@@ -130,11 +130,11 @@ Database: MOHEAP / MOTREE / EHEAP
 ```cpp
 struct MeshObjectRecord
 {
-    int          iMeshObjectId;
-    char         szDisplayName[128];
-    int          nCmp;
-    fgm_TzCmp*   pComps;
-    // eMeshesType 在 Create() 时写入 MOHEAP
+    int                 iMeshObjectId;
+    char                szDisplayName[128];
+    int                 nCmp;
+    fgm_TzCmp*          pComps;
+    femmgMeshObjectType eMeshObjectType;   // Create() 时写入 MOHEAP
 };
 ```
 
@@ -186,17 +186,44 @@ private:
 | `Allocate` | `m_iMeshObjectId++`；在 **`femmgMeshObjectManager::Create()` 末尾**调用 |
 | Keep 失败 | 不 `Create`、不 `Allocate`，`m_iMeshObjectId` 不变 |
 
+### femmgMeshObjectType 与默认命名
+
+```cpp
+enum femmgMeshObjectType
+{
+    FEMMG_MO_TYPE_UNKNOWN = 0,
+    // 1D：1..100
+    FEMMG_MO_TYPE_BEAM    = 1,
+    // 2D：101..200
+    FEMMG_MO_TYPE_SHELL   = 101,
+    // 3D：201..300
+    FEMMG_MO_TYPE_SOLID   = 201,
+    // Others：301..400
+    FEMMG_MO_TYPE_RIGID      = 301,
+    FEMMG_MO_TYPE_CONSTRAINT = 302
+    // 更多类型待产品确定
+};
+```
+
+- 每个 xD Meshes 区间预留 **100** 个枚举空位供扩展
+- **不**单独定义 MeshesCollector 枚举；Navigator 分组由枚举值区间派生（1/2/3/4 → 1D/2D/3D/Others Meshes）
+- `eMeshObjectType` 由 **Create 调用方传入**（Keep / 手工上下文），Manager 不推断
+- 混合维度 / 无法判定 → `FEMMG_MO_TYPE_UNKNOWN` → Others，默认名 `other_unknown_N`
+- 默认名：`{维度前缀}_{类型段}_{序号}`（FS §3.3.4）；Others 用 `other_*`；序号不回收
+- Fem 内显示名唯一；Rename 重名拒绝
+
 ### femmgMeshObjectManager::Create
 
 ```cpp
-femStatus Create(const char* pszDisplayName, const fgm_TzCmp* pComps, int nCmp);
-// 手工建网：Create(name, nullptr, 0)
+femStatus Create(const fgm_TzCmp* pComps, int nCmp, femmgMeshObjectType eType);
+// 手工建网：Create(nullptr, 0, eType)
 ```
 
 **Create 内部流程：**
 
 ```text
-moId = GetMeshObjectId()
+moId = GetCurrentMeshObjectId()
+szDisplayName = GenerateDefaultDisplayName(eType)
 组装 MeshObjectRecord
 femdaMOFSIProxy->AddMeshObject(record)
 m_MOIdToRecordMap[moId] = record
@@ -206,9 +233,9 @@ Allocate()
 **对外创建调用顺序：**
 
 ```text
-1. element 创建：ElmAdd 前 iMeshObjectId = GetMeshObjectId()
+1. element 创建：ElmAdd 前 iMeshObjectId = GetCurrentMeshObjectId()
 2. ElmAdd 成功后：OnElementAdded(moId) → ++m_MOIdToElementCountMap
-3. Keep 成功 / 手工完成：Create(name, pComps, nCmp)
+3. Keep 成功 / 手工完成：Create(pComps, nCmp, eType)
 4. Save
 ```
 
@@ -259,16 +286,16 @@ Allocate()
 
 阶段一决策：手工整包删除接受 O(N)；后续可选 `m_MOIdToElementPtrs` 索引优化。
 
-### Meshes / eMeshesType
+### Meshes / eMeshObjectType
 
 - Navigator：`Fem → 1D/2D/3D/Others Meshes → Mesh`（无额外 Meshes 父级）
-- `eMeshesType` 在 `Create()` 时写入 MOHEAP；Rename / element 变化不改变
-- FS 用语：UI 显示「XD Meshes」；代码字段 `eMeshesType`
+- `eMeshObjectType` 在 `Create()` 时由调用方传入并写入 MOHEAP；Rename / element 变化不改变
+- Meshes Collector 分组由枚举区间派生，不单独持久化
 
 ### 持久化
 
 - MOHEAP + MOTREE，FEM Record Field 2
-- 变长 record：`iMeshObjectId` + name + `nCmp` + `fgm_TzCmp[]`
+- 变长 record：`iMeshObjectId` + name + `eMeshObjectType` + `nCmp` + `fgm_TzCmp[]`
 - MOHEAP record **不包含** `femId`（由 FEM 上下文承担）
 - Save：MOHEAP/MOTREE + EHEAP 中 `element.iMeshObjectId`
 - Open：恢复 MeshObject 元数据 + 扫描 element 重建关系与计数
@@ -364,6 +391,7 @@ Allocate()
 |---|---|
 | V1.1 | `eMeshesType`；§4.3 Meshes 归属；§5.3 删除、§5.4 Rename；对齐飞书 FS |
 | V1.2 | §5.5–§5.7 占位；§5.2/§5.3 User Case 用语改为几何网格 / 手工网格 |
+| V1.3 | `eMeshObjectType`；`Create(pComps, nCmp, eType)`；FS 默认命名与 Fem 内唯一性 |
 
 **刻意未改：** §1–§4 仍保留「几何 Keep」「手工建网」等原有表述。
 
@@ -382,3 +410,11 @@ Allocate()
 
 - 将 07-02 / 07-03 / 07-06 / 07-07 四份讨论纪要合并为 `MeshObject-Discussion-Notes.md`
 - `femmgMeshObjectIdManager` 更名为 **`femmgMeshObjectIdAllocator`**（DS §3.3.3、§4.1.3 及全文类名同步）
+
+**同日续（命名与类型）：**
+
+- 对齐 FS §3.3.4：`Create` 去掉 `name`，改为 `Create(pComps, nCmp, eType)`；默认名在 Manager 内生成
+- `eMeshesType` 改为 **`eMeshObjectType`**（beam/shell/solid/rigid/constraint/unknown）；每类 xD Meshes 枚举区间预留 100 空位
+- 不单独定义 MeshesCollector 枚举；Navigator 分组由 `eMeshObjectType` 区间派生
+- 混合 / 无法判定 → `UNKNOWN` → Others，`other_unknown_N`；Fem 内显示名唯一
+- 更多网格类型待产品确定后补充枚举与映射表
