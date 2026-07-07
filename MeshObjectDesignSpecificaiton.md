@@ -7,7 +7,7 @@ Design Specification for [Mesh Object]
 
 重庆诺源工业软件科技有限公司  
 2026年07月07日  
-版本：V1.3
+版本：V1.4
 
 ## Revision History
 
@@ -18,6 +18,7 @@ Design Specification for [Mesh Object]
 | V1.1 | 2026-07-07 | 补充 Meshes 节点归属（`eMeshesType`）；同步 §5.3/§5.4；对齐飞书 FS 术语 |
 | V1.2 | 2026-07-07 | §5.5–§5.7 占位；§5.2/§5.3 User Case 用语（几何网格 / 手工网格） |
 | V1.3 | 2026-07-07 | `eMeshObjectType` 取代 `eMeshesType`；`Create(pComps, nCmp, eType)` 与 FS 默认命名规则 |
+| V1.4 | 2026-07-08 | 默认名序号改为「最小可用空位」策略 |
 
 
 ## 1. Introduction
@@ -190,7 +191,18 @@ struct MeshObjectRecord
 **默认显示名规则（对齐 FS §3.3.4）**
 
 - 模式：`{维度前缀}_{类型段}_{序号}`（如 `3d_solid_2`、`other_rigid_1`）
-- 序号：同一 Fem、同一 `{维度前缀}_{类型段}` 组合下从 `_1` 递增；Rename 释放的名称**不回收**序号
+- 序号：同一 Fem、同一 `{维度前缀}_{类型段}` 组合下，取**当前未被占用的最小编号**（补空位）
+- `GenerateDefaultDisplayName(eType)` 算法：
+
+```text
+prefix = "{dim}_{type}_"
+for n = 1, 2, 3, ...
+  candidate = prefix + n
+  if !IsDisplayNameUsed(candidate)
+    return candidate
+```
+
+- 示例：已有 `3d_solid_1`、`3d_solid_2`、`3d_solid_4` → 下一个为 `3d_solid_3`；仅有 `3d_solid_1`、`3d_solid_2` → 下一个为 `3d_solid_3`
 - Create 成功瞬间生成；Create 失败不占序号
 - Fem 内显示名称不得重复；自动命名与 Rename 均须校验唯一性
 

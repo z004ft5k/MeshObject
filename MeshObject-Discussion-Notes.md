@@ -8,7 +8,7 @@
 
 ### DS 版本
 
-- 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.3**
+- 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.4**
 
 ### User Case 进度
 
@@ -209,7 +209,7 @@ enum femmgMeshObjectType
 - **不**单独定义 MeshesCollector 枚举；Navigator 分组由枚举值区间派生（1/2/3/4 → 1D/2D/3D/Others Meshes）
 - `eMeshObjectType` 由 **Create 调用方传入**（Keep / 手工上下文），Manager 不推断
 - 混合维度 / 无法判定 → `FEMMG_MO_TYPE_UNKNOWN` → Others，默认名 `other_unknown_N`
-- 默认名：`{维度前缀}_{类型段}_{序号}`（FS §3.3.4）；Others 用 `other_*`；序号不回收
+- 默认名：`{维度前缀}_{类型段}_{序号}`（FS §3.3.4）；Others 用 `other_*`；序号取**最小可用空位**（补空位，如 1,2,4 → 3）
 - Fem 内显示名唯一；Rename 重名拒绝
 
 ### femmgMeshObjectManager::Create
@@ -418,3 +418,4 @@ Allocate()
 - 不单独定义 MeshesCollector 枚举；Navigator 分组由 `eMeshObjectType` 区间派生
 - 混合 / 无法判定 → `UNKNOWN` → Others，`other_unknown_N`；Fem 内显示名唯一
 - 更多网格类型待产品确定后补充枚举与映射表
+- 默认名序号：**补空位**（最小未占用编号），不用高水位计数器
