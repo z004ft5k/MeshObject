@@ -4,12 +4,33 @@
 
 ---
 
-## 最新状态（截至 2026-07-08）
+## 最新状态（截至 2026-07-08 晚）
 
 ### DS 版本
 
-- 本地主文档：`MeshObjectDesignSpecificaiton.md`，当前 **V1.4**
+- 本地主文档：`MeshObjectDesignSpecificaiton.md`，**与飞书 Wiki 同步**（封面 `Vx.x`；权威来源为飞书）
+- GitHub 最新：`e631a6e`（`docs(ds): align local DS with Feishu Wiki as authoritative source`）
 - 讨论纪要：单一文件 `MeshObject-Discussion-Notes.md`（本文件）
+
+### MMF & RoadMap（2612）
+
+- 飞书规划文档：[MMF & RoadMap](https://ycntm1ix2za7.feishu.cn/wiki/Vx4ywFX5qiJXe8kzaqacyyvTndh)
+- 已填：**MMF1**（Navigator 右键 + Non-Current）、**MMF2**（Force 子实例）、**MMF3**（其余 Load/Constraint Set）
+- 待填：**MMF4**（Mesh Object 阶段一）、**MMF5**（阶段二手工建网 + AFEM 汇入）
+- 本地导出：`mmf-roadmap-sheets.md`（飞书嵌入 Sheet 快照）
+
+### MMF4 / MMF5 Story 草案（用户可感知）
+
+| MMF | Story | 说明 |
+|---|---|---|
+| MMF4-S1 | Keep 后 Navigator 出现 Mesh | 含 XD Meshes 树、默认命名；Src 层为实现任务，非独立 Story |
+| MMF4-S2 | Navigator Delete 整包删 Mesh | P0 |
+| MMF4-S3 | Info | P1 |
+| MMF4-S4 | Rename | P1 |
+| MMF4-S5 | Show/Hide | P1 |
+| MMF4-S6 | Save/Open 持久化 | P0 |
+| MMF5-S1 | 手工建网完成后 Navigator 出现 Mesh | 操作语义与 MMF4 一致 |
+| MMF5-S2 | AFem Update 汇入 Mesh 节点树 | |
 
 ### User Case 进度
 
@@ -49,14 +70,14 @@
 
 ### 建议下次讨论顺序
 
-1. §5.5 AFEM Map 或 §5.6 Copy FEM（择一）
-2. Info User Case（若阶段一需要）
-3. 补充 `eMeshObjectType` 更多类型及与手工入口的映射
-4. 飞书 Wiki 与 GitHub V1.4 同步
+1. 将 MMF4/MMF5 填入飞书 MMF 列表 Sheet 并排 Roadmap Sprint
+2. §5.5 AFEM Map 或 §5.6 Copy FEM（择一）
+3. Info User Case（若阶段一需要）
+4. 补充 `eMeshObjectType` 更多类型及与手工入口的映射
 
 ### 关键一句话
 
-> **`Create(pComps, nCmp, eType)` 无 name；默认名在 Manager 内按 `g_MOTypeInfoTable` 补空位生成；`eMeshObjectType` 持久化类型，Meshes 分组查表；Id 由 IdAllocator 管，删除走 `ElemRemove` 挂钩。**
+> **飞书 Wiki 为 DS 权威来源；MMF4=阶段一几何 Mesh 全套 Navigator 管理，MMF5=手工建网+AFEM；Story 只写用户可感知行为，Src/Entity 为实现子项。**
 
 ---
 
@@ -72,7 +93,7 @@
 - **编辑原则**：只改用户明确要求或已共同确认的内容；占位仅写「待补充」，不展开、不联想、不擅自改其他章节术语
 - Git CLI：可用仓库内 `scripts/git.ps1` / `push-to-github.ps1`（捆绑 GitHub Desktop 的 git）
 - 公司内网 Git HTTPS 不稳定，已配置 **SSH**（`ssh.github.com:443`）推送
-- 飞书 MCP **无法直接修改** Wiki 已有 docx，更新 Wiki 建议以本地 DS 为准复制粘贴
+- 飞书 MCP **无法直接修改** Wiki 已有 docx；读文档须同时检查 **嵌入 Sheet（block_type 30）** 与 **白板/UML（block_type 43）**，不能仅用 `rawContent`
 
 ---
 
@@ -483,3 +504,101 @@ Allocate()
 - Info User Case
 - 补充更多 `eMeshObjectType` 与手工入口映射
 - 飞书 Wiki 与 GitHub V1.4 同步
+
+---
+
+### 2026-07-08（下午：Git 同步、MMF 规划）
+
+**主题：** 从 GitHub 拉取 MeshObject；DS 与飞书双向同步；MMF4/MMF5 与 Roadmap 规划；飞书文档阅读方法修正。
+
+**Git / DS 同步：**
+
+| 操作 | 结果 |
+|---|---|
+| `git pull` MeshObject | `9e5f4a1` → `eb91e18`（V1.4，5 commits） |
+| 按飞书 Wiki 更新本地 DS（V1.5 草案） | commit `c295eb2`：orphan Node、AFEM map、会议反馈 |
+| 用户精简飞书后，**以飞书为唯一权威**覆盖本地 | commit `e631a6e`：恢复 `Vx.x`、精简 Terminology/附录；移除冗余 §4.3 等 |
+| README | 权威来源改为飞书 Wiki 优先 |
+
+**飞书文档阅读（教训）：**
+
+- `docx_v1_document_rawContent` **读不到**嵌入电子表格与白板/UML
+- MMF & RoadMap 的「MMF列表」「Roadmap」为嵌入 Sheet（`Vn0VsQsVohKXVCtKJqHcRUdgnfd`）
+- 「MMF 拆分逻辑」为白板块（`PQZkwgPN7hqatObdX4IcNtdIn3g`），内容：`2606 MVP` → 三条线（右键菜单、Load&Constraint Object、Mesh Object）
+- 已添加 Cursor 用户规则：**Feishu docs: check sheets and boards**
+
+**MMF 规划结论：**
+
+| MMF | 范围 | 状态 |
+|---|---|---|
+| MMF1 | Navigator 右键 + Non-Current FE Studies（S1–S8） | 飞书已填；Sprint 2–6 |
+| MMF2 | LoadSet Force 几何&网格子实例（S1–S4） | 飞书已填；Sprint 2–5 |
+| MMF3 | 其余 Load/Constraint Set（S1–S5） | 飞书已填；Sprint 5–10 |
+| **MMF4** | Mesh Object **阶段一**（几何 Keep + Navigator 全套） | **待填入飞书 Sheet** |
+| **MMF5** | Mesh Object **阶段二**（手工建网）+ **AFEM 汇入** | **待填入飞书 Sheet** |
+
+**Story 拆分修正：**
+
+- ❌ 不应将「Src 层对象模型」单独列为 User Story（用户不可感知，且为 S1 前置实现）
+- ✅ MMF4 Story 按用户操作划分：S1 Keep 后出现 Mesh → S2 Delete → S3 Info → S4 Rename → S5 Show/Hide → S6 Save/Open
+- ✅ MMF5：S1 手工建网出现 Mesh；S2 AFem Update 汇入；手工 Mesh 的 Info/Rename 等复用 MMF4，写入 DoD 即可
+
+**参考链接：**
+
+- DS（飞书）：https://ycntm1ix2za7.feishu.cn/wiki/PwilwM9Ayi75pVkQqU0cutWQn1f
+- FS（飞书）：https://ycntm1ix2za7.feishu.cn/wiki/DqwgwzkjKiBZsHktQm8cfG4knUf
+- MMF & RoadMap：https://ycntm1ix2za7.feishu.cn/wiki/Vx4ywFX5qiJXe8kzaqacyyvTndh
+
+**待下次继续：**
+
+- 将 MMF4/MMF5 写入飞书 MMF 列表 Sheet 并排 Roadmap Sprint
+- MMF4/MMF5 与团队确认后锁定优先级与 Freeze 范围
+
+---
+
+### 2026-07-08（下午：Git 同步、MMF 规划）
+
+**主题：** 从 GitHub 拉取 MeshObject；DS 与飞书双向同步；MMF4/MMF5 与 Roadmap 规划；飞书文档阅读方法修正。
+
+**Git / DS 同步：**
+
+| 操作 | 结果 |
+|---|---|
+| `git pull` MeshObject | `9e5f4a1` → `eb91e18`（V1.4，5 commits） |
+| 按飞书 Wiki 更新本地 DS（V1.5 草案） | commit `c295eb2`：orphan Node、AFEM map、会议反馈 |
+| 用户精简飞书后，**以飞书为唯一权威**覆盖本地 | commit `e631a6e`：恢复 `Vx.x`、精简 Terminology/附录；移除冗余 §4.3 等 |
+| README | 权威来源改为飞书 Wiki 优先 |
+
+**飞书文档阅读（教训）：**
+
+- `docx_v1_document_rawContent` **读不到**嵌入电子表格与白板/UML
+- MMF & RoadMap 的「MMF列表」「Roadmap」为嵌入 Sheet（`Vn0VsQsVohKXVCtKJqHcRUdgnfd`）
+- 「MMF 拆分逻辑」为白板块（`PQZkwgPN7hqatObdX4IcNtdIn3g`），内容：`2606 MVP` → 三条线（右键菜单、Load&Constraint Object、Mesh Object）
+- 已添加 Cursor 用户规则：**Feishu docs: check sheets and boards**
+
+**MMF 规划结论：**
+
+| MMF | 范围 | 状态 |
+|---|---|---|
+| MMF1 | Navigator 右键 + Non-Current FE Studies（S1–S8） | 飞书已填；Sprint 2–6 |
+| MMF2 | LoadSet Force 几何&网格子实例（S1–S4） | 飞书已填；Sprint 2–5 |
+| MMF3 | 其余 Load/Constraint Set（S1–S5） | 飞书已填；Sprint 5–10 |
+| **MMF4** | Mesh Object **阶段一**（几何 Keep + Navigator 全套） | **待填入飞书 Sheet** |
+| **MMF5** | Mesh Object **阶段二**（手工建网）+ **AFEM 汇入** | **待填入飞书 Sheet** |
+
+**Story 拆分修正：**
+
+- ❌ 不应将「Src 层对象模型」单独列为 User Story（用户不可感知，且为 S1 前置实现）
+- ✅ MMF4 Story 按用户操作划分：S1 Keep 后出现 Mesh → S2 Delete → S3 Info → S4 Rename → S5 Show/Hide → S6 Save/Open
+- ✅ MMF5：S1 手工建网出现 Mesh；S2 AFem Update 汇入；手工 Mesh 的 Info/Rename 等复用 MMF4，写入 DoD 即可
+
+**参考链接：**
+
+- DS（飞书）：https://ycntm1ix2za7.feishu.cn/wiki/PwilwM9Ayi75pVkQqU0cutWQn1f
+- FS（飞书）：https://ycntm1ix2za7.feishu.cn/wiki/DqwgwzkjKiBZsHktQm8cfG4knUf
+- MMF & RoadMap：https://ycntm1ix2za7.feishu.cn/wiki/Vx4ywFX5qiJXe8kzaqacyyvTndh
+
+**待下次继续：**
+
+- 将 MMF4/MMF5 写入飞书 MMF 列表 Sheet 并排 Roadmap Sprint
+- MMF4/MMF5 与团队确认后锁定优先级与 Freeze 范围
