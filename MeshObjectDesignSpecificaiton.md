@@ -6,8 +6,8 @@ Design Specification for [Mesh Object]
 [Project ID]
 
 重庆诺源工业软件科技有限公司  
-2026年07月07日  
-版本：V1.4
+2026年07月08日  
+版本：V1.5
 
 ## Revision History
 
@@ -19,6 +19,7 @@ Design Specification for [Mesh Object]
 | V1.2 | 2026-07-07 | §5.5–§5.7 占位；§5.2/§5.3 User Case 用语（几何网格 / 手工网格） |
 | V1.3 | 2026-07-07 | `eMeshObjectType` 取代 `eMeshesType`；`Create(pComps, nCmp, eType)` 与 FS 默认命名规则 |
 | V1.4 | 2026-07-08 | 默认名序号改为「最小可用空位」策略；补充 `g_MOTypeInfoTable` 静态映射表 |
+| V1.5 | 2026-07-08 | 与飞书 Wiki 同步：§5.3 orphan Node 清理、§5.5 AFEM Map 初稿、§6.3/§6.4 会议反馈 |
 
 
 ## 1. Introduction
@@ -34,13 +35,13 @@ Design Specification for [Mesh Object]
 1. 在 Src Layer 中建立 MeshObject 的数据模型、持久化结构和运行时管理机制。
 2. 在 Entity 层建立对 MeshObject 的对象化封装，为上层提供稳定的访问与操作能力。
 3. 明确 UI 层、Entity 层和 Src Layer 的职责划分与调用关系，为 Navigator 集成提供清晰边界。
-4. 支持几何 Keep 和手工创建两类 MeshObject 来源，并保证 Save/Open 后数据可恢复。
+4. 支持几何网格 Keep 和手工创建两类 MeshObject 来源，并保证 Save/Open 后数据可恢复。
 
 ### 1.3 产品阶段范围
 
 #### 阶段一
 
-- 几何 Keep 成功后自动创建 MeshObject
+- 几何网格 Keep 成功后自动创建 MeshObject
 - Navigator 支持显示 MeshObject 节点
 - Navigator 支持基础操作：Info / Rename / Delete / Show-Hide
 
@@ -707,9 +708,9 @@ Navigator 刷新，对应 Meshes 节点下显示新 Mesh 节点
 
 | 入口           | 触发方式                     | 如何到达 ElemRemove                                                       |
 | ------------ | ------------------------ | --------------------------------------------------------------------- |
-| 整包删除         | Navigator Delete Mesh 节点 | `MeshObjectDelete` 编排：几何网格调 `GeoMeshDel`，手工网格 O(N) 扫描后逐个 `ElemRemove` |
+| 整包删除         | Navigator Delete Mesh 节点 | `MeshObjectDelete`：几何网格调已有删几何网格 API；手工单元 O(N) 扫描 FEM 全部 element 后逐个 `ElemRemove`；并删除无其他 element 关联的 orphan Node |
 | 几何网格删除       | 用户通过已有几何删除路径删几何          | 已有删几何 API 内部级联 `ElemRemove`                                           |
-| 逐 element 删除 | 用户通过已有 element 删除路径删单元   | 直接 `ElemRemove`                                                       |
+| 手工 element 删除 | 用户通过已有 element 删除路径删单元   | 直接 `ElemRemove`                                                       |
 
 
 #### 主流程
@@ -763,6 +764,7 @@ record = femmgMeshObjectManager.QueryById(moId)
     扫描全部 element（O(N)，阶段一接受）
       filter: element.iMeshObjectId == moId
       → 逐个 ElemRemove(elPtr)              // 同入口 B
+    删除 Element 相关的 Node（当 Element 被删除后为 orphan 的 node）
     ↓
 每次 ElemRemove 均走统一挂钩；最后一个 element 删完时 RemoveMeshObject(moId)
     ↓
@@ -813,7 +815,7 @@ femStatus Rename(int moId, const char* pszDisplayName);
 
 ### 5.5 AFEM Map
 
-待补充
+应该也是要走 fe model copy。
 
 ### 5.6 Copy FEM
 
@@ -848,25 +850,15 @@ femStatus Rename(int moId, const char* pszDisplayName);
 
 ### 6.3 关键问题
 
-1. **Src 层需要构建 MeshObject 对象，对象应该存放什么数据？（与 mst_zRegion 关联？怎么关联手动创建的 node 和 element？）**
-  - 手动创建的 element 也会有 `iMeshObjectId`，meshObject 不需要和 `mst_zRegion` 关联
-2. **mst_zRegion / mst_zFace / mst_zEdge 如何存放 meshObjectId？**
-  - 不需要存放，只要有 element 和 `iMeshObjectId` 就行
-3. **如何支持 MeshObject 对应到 RibbonBar 的创建和删除操作，部分删除，全删除？**
-  - 删除 element 的入口是统一的，只要在最后检查删除的 element 的 `iMeshObjectId` 对应的 meshObject 还有没有 element 就行
-  - 缓存 `map<int, int> m_MOIdToElementCountMap;  // MOId → count`
-4. **如何支持 AFEM？**
-  - 待补充
-5. **如何支持 Copy FEM 操作？**
-  - 待补充
-6. **如何支持 CheckIn、CheckOut 操作？**
-  - 待补充
-7. **如何支持保存 mf1、打开 mf1？**
-  - 在 fem 的 field2 新建两个段存放 heap 和 tree
-8. **如何支持打开 2606 之前的 mf1 和 unv，创建导入规则？**
-  - 待补充
+1. **如何支持 AFEM？**（已有思路，需确认）
+2. **如何支持 Copy FEM 操作？**（已有思路，需确认）
+3. **如何支持 CheckIn、CheckOut 操作？**（待研究，感觉不是阻塞项）
 
-### 6.4 后续设计章节
+### 6.4 会议反馈
+
+- section 是否可以同时选择面和体？
+
+### 6.5 后续设计章节
 
 - Model Entity 层
 - Navigator-UI 层
